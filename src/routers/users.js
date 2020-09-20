@@ -2,6 +2,7 @@ const express = require('express')
 const usersRouter = new express.Router()
 const Users = require('../models/users')
 const dboperations = require('../db/db-operations')
+const User = require('../models/users')
 require('../db/mongoose')
 
 //Create a new user
@@ -13,7 +14,7 @@ usersRouter.post('/users', async(req, res) => {
         console.log('User Created :', user.name)
     }catch(error){
         res.status(400).send(error)
-        console.log('User Creation Failed :', user.name)
+        console.log('User Creation Failed :', error)
     }
 })
 
@@ -79,7 +80,11 @@ usersRouter.patch('/users/:id', async (req, res) => {
     }
     else{
         try{
-            const user = await dboperations.usersUpdateInfo(req.params.id, req.body)
+            // const user = await dboperations.usersUpdateInfo(req.params.id, req.body)
+            const user = await Users.findById(req.params.id)
+            updates.forEach((update) => user[update] = req.body[update])
+            await user.save()
+
             if(!user){
                 console.log('No user found with id :', req.params.id)
                 return res.status(400).send({ error: 'No user found' })
