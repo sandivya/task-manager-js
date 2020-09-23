@@ -50,6 +50,17 @@ const usersSchema = new mongoose.Schema({
     }]
 })
 
+//To prevent passwords and tokens from showing up
+usersSchema.methods.toJSON = function(){
+    const user = this
+    const userObj = user.toObject()
+
+    delete userObj.password
+    delete userObj.tokens
+
+    return userObj
+}
+
 usersSchema.methods.generateAuthToken = async function(){
     const user = this
     const token = await jwt.generateToken(user.id.toString())

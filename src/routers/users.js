@@ -37,37 +37,19 @@ usersRouter.get('/users/me', auth.auth, async (req, res) => {
 })
 
 
-//Fetch User by id
-usersRouter.get('/users/:id', async (req, res) => {
-    id = req.params.id
-    try{
-        const user = await Users.findById(id)
-        if(!user){
-            return res.status(404).send()
-        }
-        res.send(user).status(200)
-    }catch(error){
-        res.status(500).send(error)
-    }
-})
-
-
 //Delete user by id
-usersRouter.delete('/users/:id', async(req, res) => {
+usersRouter.delete('/users/me', auth.auth, async(req, res) => {
     try{
-        const user = await Users.findByIdAndDelete(req.params.id)
-        if(!user){
-            res.status(404).send({ error: "User not found." })
-        }
-        res.status(200).send(user)
+        await req.user.remove()
+        res.status(200).send(req.user)
     }catch (error){
-        res.status(500).send()
+        res.status(500).send('User deleted')
     }
 })
 
 
 //Update user by id
-usersRouter.patch('/users/:id', async (req, res) => {
+usersRouter.patch('/users/me', auth.auth, async (req, res) => {
     const updates = Object.keys(req.body)
     const allowedUpdates = ['name', 'email', 'password', 'age']
     const isValidOperation = updates.every((update) => allowedUpdates.includes(update))
@@ -77,14 +59,10 @@ usersRouter.patch('/users/:id', async (req, res) => {
     }
     else{
         try{
-            const user = await Users.findById(req.params.id)
-            updates.forEach((update) => user[update] = req.body[update])
-            await user.save()
+            updates.forEach((update) => req.user[update] = req.body[update])
+            await req.user.save()
 
-            if(!user){
-                return res.status(400).send({ error: 'No user found' })
-            }
-            res.status(200).send(user)
+            res.status(200).send({'User Updated': req.user})
         }catch(error){
             res.status(500).send()
         }
