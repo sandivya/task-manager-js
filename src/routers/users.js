@@ -91,4 +91,29 @@ usersRouter.patch('/users/:id', async (req, res) => {
     }
 })
 
+
+//User logout
+usersRouter.post('/users/logout', auth.auth, async(req, res) => {
+    try{
+        req.user.tokens = req.user.tokens.filter((token) => {
+            return token.token !== req.token
+        })
+        await req.user.save()
+        res.status(201).send('Logged Out.')
+    }catch (error){
+        res.status(500).send()
+    }
+})
+
+
+//Logout from all sessions
+usersRouter.post('/users/logoutAll', auth.auth, async (req, res) => {
+    try{
+        req.user.tokens = []
+        await req.user.save()
+        res.status(201).send('Logged out from all sessions.')
+    }catch(error){
+        res.status(500).send()
+    }
+})
 module.exports = usersRouter
