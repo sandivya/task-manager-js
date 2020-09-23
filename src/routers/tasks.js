@@ -10,10 +10,8 @@ tasksRouter.post('/tasks', async (req, res) => {
     try{
         await task.save()
         res.status(201).send(task)
-        console.log('Task created successfully :', task.description)
     }catch(error){
         res.status(400).send(error)
-        console.log('Task creation failed :', task.description || 'NA')
     }
 })
 
@@ -23,14 +21,11 @@ tasksRouter.get('/tasks', async(req, res) => {
     try{
         const task = await Tasks.find({})
         if(task.length === 0){
-            console.log('No task found.')
             return res.status(404).send()
         }
         res.status(201).send(task)
-        console.log('Task found : \n', task)
     }catch(error){
         res.status(500).send()
-        console.log('An error occurred while fetching tasks list : ', error)
     }
 })
 
@@ -41,14 +36,12 @@ tasksRouter.get('/tasks/:id', async (req, res) => {
     try{
         const task = await Task.findById(id)       
         if(!task){
-            console.log('No task found with id :', id)
             return res.status(404).send()
         }
         res.status(201).send(task)
         console.log('Task found :', task.description)
     }catch(error) {
         res.status(500).send()
-        console.log('An error occurred while fetching tasks list.')
     }
 })
 
@@ -58,13 +51,10 @@ tasksRouter.delete('/tasks/:id', async (req, res) => {
     try{
         const [task, count] = await dboperations.tasksDeleteAndCountUncompleted(req.params.id)
         if (!count){
-             console.log('No task left.')
              return res.status(200).send('No task left.')
         }
-        console.log('Task left :', count)
         res.status(200).send(task)
     }catch(error){
-       console.log('An error occurred while delete and fetchig incomplete count task.', error)
        res.status(500).send()
    }
 })
@@ -83,14 +73,11 @@ tasksRouter.patch('/tasks/:id', async(req, res) => {
         try{
             const [task, count] = await dboperations.tasksUpdateStatusAndCount(req.params.id, req.body)
             if(!count){
-                        console.log('No task left.')
                         return res.status(200).send('No task left.')
                 }
-            console.log('Task still incomplete :', count)
             res.status(200).send(task)
         }catch (error){
             res.status(400).send(error)
-            console.log('An error occurred while updating task status and fetchig incomplete count task.')
         }
     }
 })

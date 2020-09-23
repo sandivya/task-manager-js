@@ -1,6 +1,7 @@
 const mongoose = require('mongoose')
 const validator = require('validator')
 const bcrypt = require('../security/bcrypt')
+const jwt = require('../security/jwt')
 
 const usersSchema = new mongoose.Schema({
     name: {
@@ -27,7 +28,8 @@ const usersSchema = new mongoose.Schema({
             }
         },
         trim: true,
-        lowercase: true
+        lowercase: true,
+        unique: true
     },
     password: {
         type: String,
@@ -39,9 +41,36 @@ const usersSchema = new mongoose.Schema({
                 throw new Error('Password cannot contain word : password')
             }
         }
-    }
+    },
+    tokens: [{
+        token: {
+            type: String,
+            required: true
+        }
+    }]
 })
 
+usersSchema.methods.generateAuthToken = async function(){
+    const user = this
+    const token = await jwt.generateToken(user.id.toString())
+    user.tokens = user.tokens.concat({token})
+    user.save()
+    return token
+}
+
+usersSchema.statics.findByCredentials = async (email, password) => {
+    const user = await User.findOne({ email })
+    if(!user){
+        throw new Error('Unable to login.')
+    }
+    const isPasswordMatch = await bcrypt.comparePassword(password, user.password)
+    if(!isPasswordMatch){
+        throw new Error('Unable to login.')
+    }
+    return user
+}
+
+//Hash plaintext password before saving
 usersSchema.pre('save', async function(next) {
     const user = this
 
