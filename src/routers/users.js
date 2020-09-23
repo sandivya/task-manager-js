@@ -3,7 +3,7 @@ const usersRouter = new express.Router()
 const Users = require('../models/users')
 const { Router } = require('express')
 require('../db/mongoose')
-const auth = require('../midleware/auth')
+const auth = require('../middleware/auth')
 
 
 //Create a new user
