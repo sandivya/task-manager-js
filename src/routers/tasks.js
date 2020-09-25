@@ -2,11 +2,15 @@ const express = require('express')
 const tasksRouter = new express.Router()
 const Tasks = require('../models/tasks')
 const dboperations = require('../db/db-operations')
+const auth = require('../middleware/auth')
 require('../db/mongoose')
 
 //Create a new task
-tasksRouter.post('/tasks', async (req, res) => {
-    const task = new Tasks(req.body)
+tasksRouter.post('/tasks', auth.auth, async (req, res) => {
+    const task = new Tasks({
+        ...req.body,
+        owner: req.user.id
+    })
     try{
         await task.save()
         res.status(201).send(task)
@@ -17,9 +21,9 @@ tasksRouter.post('/tasks', async (req, res) => {
 
 
 // Get all tasks
-tasksRouter.get('/tasks', async(req, res) => {
+tasksRouter.get('/tasks', auth.auth, async(req, res) => {
     try{
-        const task = await Tasks.find({})
+        const task = await Tasks.find({owner: req.user.id})
         if(task.length === 0){
             return res.status(404).send()
         }
@@ -31,10 +35,10 @@ tasksRouter.get('/tasks', async(req, res) => {
 
 
 //Get task by id
-tasksRouter.get('/tasks/:id', async (req, res) => {
+tasksRouter.get('/tasks/:id', auth.auth, async (req, res) => {
     const id = req.params.id
     try{
-        const task = await Task.findById(id)       
+        const task = await Tasks.findOne({_id: id, owner: req.user.id})       
         if(!task){
             return res.status(404).send()
         }
@@ -47,11 +51,11 @@ tasksRouter.get('/tasks/:id', async (req, res) => {
 
 
 //Delete Task by id
-tasksRouter.delete('/tasks/:id', async (req, res) => {
+tasksRouter.delete('/tasks/:id', auth.auth, async (req, res) => {
     try{
-        const [task, count] = await dboperations.tasksDeleteAndCountUncompleted(req.params.id)
-        if (!count){
-             return res.status(200).send('No task left.')
+        const task = await dboperations.tasksDeleteAndCountUncompleted(req.params.id, req.user.id)
+        if (!task){
+             return res.status(404).send()
         }
         res.status(200).send(task)
     }catch(error){
@@ -61,7 +65,7 @@ tasksRouter.delete('/tasks/:id', async (req, res) => {
 
 
 //Update complete status and count incomplete tasks
-tasksRouter.patch('/tasks/:id', async(req, res) => {
+tasksRouter.patch('/tasks/:id', auth.auth, async(req, res) => {
     const updates = Object.keys(req.body)
     const allowedUpdates = ['description', 'completed']
 
@@ -71,13 +75,13 @@ tasksRouter.patch('/tasks/:id', async(req, res) => {
         res.status(400).send({ error: 'Invalid updates!' })
     }else{
         try{
-            const [task, count] = await dboperations.tasksUpdateStatusAndCount(req.params.id, req.body)
-            if(!count){
-                        return res.status(200).send('No task left.')
-                }
+            const task = await dboperations.tasksUpdateStatusAndCount(req.params.id, req.user.id, req.body)
+            if(!task){
+                return res.status(404).send()
+            }
             res.status(200).send(task)
         }catch (error){
-            res.status(400).send(error)
+            res.status(500).send(error)
         }
     }
 })

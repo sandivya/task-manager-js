@@ -2,6 +2,7 @@ const mongoose = require('mongoose')
 const validator = require('validator')
 const bcrypt = require('../security/bcrypt')
 const jwt = require('../security/jwt')
+const Task = require('./tasks')
 
 const usersSchema = new mongoose.Schema({
     name: {
@@ -50,6 +51,13 @@ const usersSchema = new mongoose.Schema({
     }]
 })
 
+usersSchema.virtual('tasks', {
+    ref: 'tasks',
+    localField: '_id',
+    foreignField: 'owner'
+})
+
+
 //To prevent passwords and tokens from showing up
 usersSchema.methods.toJSON = function(){
     const user = this
@@ -88,6 +96,13 @@ usersSchema.pre('save', async function(next) {
     if(user.isModified('password')){
         user.password = await bcrypt.encryptPassword(user.password)
     }
+    next()
+})
+
+//Remove a user's tasks if user is removed
+usersSchema.pre('remove', async function(next){
+    const user = this
+    await Task.deleteMany({owner: user._id})
     next()
 })
 

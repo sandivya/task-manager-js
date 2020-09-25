@@ -4,17 +4,15 @@ require('./mongoose')
 require('../models/tasks')
 require('../models/users')
 
-const tasksDeleteAndCountUncompleted = async (id) => {
-    const task = await Task.findByIdAndDelete(id)
-    const countRemain = await Task.countDocuments({ completed: false })
-    return [task, countRemain]
+const tasksDeleteAndCountUncompleted = async (taskid, owner) => {
+    const task = await Task.findOneAndDelete({_id: taskid, owner})
+    return task
 }
 
 
-const tasksUpdateStatusAndCount = async (id, reqBody) => {
-    const task = await Task.findByIdAndUpdate(id, reqBody, { new: true, runValidators: true })
-    const countRemain = await Task.countDocuments({ completed: false })
-    return [task, countRemain]
+const tasksUpdateStatusAndCount = async (taskid, owner, reqBody) => {
+    const task = await Task.findOneAndUpdate({_id: taskid, owner}, reqBody, { new: true, runValidators: true })
+    return task
 }
 
 const usersUpdateInfo = async (id, reqBody) => {
