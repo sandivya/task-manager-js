@@ -7,6 +7,7 @@ const auth = require('../middleware/auth')
 const multer = require('multer')
 const User = require('../models/users')
 const sharp = require('sharp')
+const { sendWelcomeMail, sendGoodbyeMail } = require('../emails/account')
 
 //Instantiating multer for avatar upload
 const avatarsUpload = multer({
@@ -27,6 +28,7 @@ usersRouter.post('/users', async(req, res) => {
     const user = new Users(req.body)  
     try{
         await user.save()
+        sendWelcomeMail(user.email, user.name)
         const token = await user.generateAuthToken()
         res.status(201).send({user, token})
     }catch(error){
@@ -90,9 +92,11 @@ usersRouter.get('/users/me/avatars', auth.auth, async(req, res) => {
 usersRouter.delete('/users/me', auth.auth, async(req, res) => {
     try{
         await req.user.remove()
+        sendGoodbyeMail(req.user.email, req.user.name)
         res.status(200).send(req.user)
     }catch (error){
-        res.status(500).send('User deleted')
+        console.log(error)
+        res.status(500).send(error)
     }
 })
 
