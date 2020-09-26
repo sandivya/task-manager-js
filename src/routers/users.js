@@ -4,6 +4,22 @@ const Users = require('../models/users')
 const { Router } = require('express')
 require('../db/mongoose')
 const auth = require('../middleware/auth')
+const multer = require('multer')
+const User = require('../models/users')
+const sharp = require('sharp')
+
+//Instantiating multer for avatar upload
+const avatarsUpload = multer({
+    limits: {
+        fileSize: 1000000
+    },
+    fileFilter(req, file, cb){        
+        if(!file.originalname.match(/\.(jpg|jpeg|png)$/)){
+            return cb(new Error('File must be a JPG/JPEG/PNG image'))
+        }
+        cb(undefined, true)
+    }
+})
 
 
 //Create a new user
@@ -34,6 +50,39 @@ usersRouter.post('/users/login', async (req, res) => {
 //Fetching User Profile
 usersRouter.get('/users/me', auth.auth, async (req, res) => {
     res.status(201).send(req.user)
+})
+
+
+// Add User profile image
+usersRouter.post('/users/me/avatars', auth.auth, avatarsUpload.single('avatar'), async (req, res) => {
+    req.user.avatar = await sharp(req.file.buffer).png().resize({width: 250, height: 250}).toBuffer()
+    await req.user.save()
+    res.status(200).send('Avatar uploaded successfully')
+}, (error, req, res, next) => {
+    res.status(404).send({'error': error.message})
+})
+
+
+//Remove avatar
+usersRouter.delete('/users/me/avatars', auth.auth, async(req, res) => {
+    req.user.avatar = undefined
+    await req.user.save()
+    res.status(200).send('Avatar deleted successfully.')
+})
+
+
+//Fetch avatar
+usersRouter.get('/users/me/avatars', auth.auth, async(req, res) => {
+    try{
+        const user = await User.findById(req.user.id)
+        if(!user || !user.avatar){
+            throw new Error()
+        }
+        res.set('Content-Type', 'image/png')
+        res.send(user.avatar)
+    }catch (error){
+        res.status(404).send()
+    }
 })
 
 
