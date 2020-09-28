@@ -1,13 +1,5 @@
-const express = require('express')
-const usersRouter = require('./routers/users')
-const tasksRouter = require('./routers/tasks')
-
-const app = express()
+const app = require('./app')
 const port = process.env.PORT
-
-app.use(express.json()) //Automatically parses incoming JSON from a request
-app.use(usersRouter)
-app.use(tasksRouter)
 
 //Start Task-Manager
 app.listen(port, () => {
